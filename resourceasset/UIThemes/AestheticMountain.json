@@ -1,7 +1,7 @@
 {
-  "MadeBy" : "Main_EX",
+  "MadeBy" : "Nguyen Minh Nhat",
   "TopLeftBorderColour" : "#4C464646",
   "BottomRightBorderColour" : "#4C464646",
-  "BackgroundImageURL" : "https://raw.githubusercontent.com/Avaluate/MainDabWeb/master/UIThemeImages/AestheticMountain.jpg",
+  "BackgroundImageURL" : "https://raw.githubusercontent.com/NguyenNhatIT/GodsWave/main/resourceasset/UIThemeImages/AestheticMountain.jpg",
   "BackgroundImageTransparency" : "20"
 }

@@ -1,3 +1,3 @@
-**MainDab Meta**
+**GodsWave Meta**
 
-This folder are simply just some files for MainDab's Community Server. 
+This folder are simply just some files for GodsWave Community Server. 

@@ -18,7 +18,7 @@ Here is a quick template to use. If you're smart enough, you can skip the majori
 Let's have a look at this theme : 
 ```json
 {
-  "MadeBy" : "Main_EX",
+  "MadeBy" : "Nguyen Minh Nhat",
   "TopLeftBorderColour" : "#4C464646",
   "BottomRightBorderColour" : "#4C464646",
   "BackgroundImageURL" : "https://art.pixilart.com/b7875a3999e9a79.gif",
