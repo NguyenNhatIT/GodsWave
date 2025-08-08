@@ -1,11 +1,11 @@
-[*] Added a lua drawing lib for the time being as I work on fixing the C++ one
-[*] Fixed getscripthash
-[*] Fixed bytecode related functions crashing
-[*] Made injection slightly better and faster
-[*] Fixed tp handler so you can inject from Home Page and transfer into multiple games
-[*] Disabled WARP VPN detection
-[*] Added a lua drawing lib for the time being as I work on fixing the C++ one
-[*] Fixed getscripthash
-[*] Fixed bytecode related functions crashing
-[*] Made injection slightly better and faster
-[*] Fixed tp handler so you can inject from Home Page and transfer into multiple games
+ [*] Added a lua drawing lib for the time being as I work on fixing the C++ one
+ [*] Fixed getscripthash
+ [*] Fixed bytecode related functions crashing
+ [*] Made injection slightly better and faster
+ [*] Fixed tp handler so you can inject from Home Page and transfer into multiple games
+ [*] Disabled WARP VPN detection
+ [*] Added a lua drawing lib for the time being as I work on fixing the C++ one
+ [*] Fixed getscripthash
+ [*] Fixed bytecode related functions crashing
+ [*] Made injection slightly better and faster
+ [*] Fixed tp handler so you can inject from Home Page and transfer into multiple games
