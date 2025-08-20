@@ -1,1009 +1,322 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>rosieteamlite — Images & Videos Browser</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-  <style>
-    :root {
-      --bg: #0b0f17;
-      --card: #121826;
-      --muted: #93a4c3;
-      --text: #e6eefc;
-      --accent: #7c5cff;
-      --accent-2: #00e0ff;
-      --danger: #ff4757;
-      --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-      --button-shadow: 0 4px 15px rgba(124, 92, 255, 0.35);
-    }
-    
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    
-    html, body {
-      height: 100%;
-      font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background: radial-gradient(1200px 800px at 10% -10%, rgba(124,92,255,.25), transparent 40%),
-                  radial-gradient(900px 600px at 110% 10%, rgba(0,224,255,.2), transparent 40%),
-                  var(--bg);
-      color: var(--text);
-      line-height: 1.6;
-    }
-    
-    /* Header styles */
-    header {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      backdrop-filter: saturate(120%) blur(10px);
-      background: linear-gradient(180deg, rgba(11,15,23,.85), rgba(11,15,23,.4));
-      border-bottom: 1px solid rgba(255,255,255,.06);
-      padding: 0.75rem 1rem;
-    }
-    
-    .header-container {
-      max-width: 1200px;
-      margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-    
-    .title {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-    
-    .logo {
-      width: 2.5rem;
-      height: 2.5rem;
-      border-radius: 0.875rem;
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      display: grid;
-      place-items: center;
-      color: white;
-      font-weight: 800;
-      box-shadow: 0 8px 30px rgba(124,92,255,.35);
-      flex-shrink: 0;
-    }
-    
-    .title-text h1 {
-      font-size: 1.25rem;
-      margin: 0;
-      line-height: 1.3;
-    }
-    
-    .sub {
-      color: var(--muted);
-      font-size: 0.8125rem;
-      margin-top: 0.25rem;
-    }
-    
-    .tabs {
-      display: flex;
-      gap: 0.5rem;
-      overflow-x: auto;
-      padding-bottom: 0.25rem;
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-    }
-    
-    .tabs::-webkit-scrollbar {
-      display: none;
-    }
-    
-    .tab {
-      border: none;
-      background: var(--card);
-      color: var(--text);
-      padding: 0.625rem 1rem;
-      border-radius: 999px;
-      cursor: pointer;
-      font-weight: 600;
-      transition: all 0.2s ease;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-    
-    .tab:hover {
-      background: rgba(255,255,255,.08);
-    }
-    
-    .tab[aria-selected="true"] {
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      color: white;
-      box-shadow: 0 0 15px rgba(124,92,255,.4);
-    }
-    
-    /* Main content */
-    main {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 1rem;
-    }
-    
-    .panel-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-    }
-    
-    .panel-title {
-      font-size: 1.125rem;
-      font-weight: 600;
-      color: var(--text);
-    }
-    
-    .download-all {
-      appearance: none;
-      border: none;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 0.875rem;
-      padding: 0.625rem 1rem;
-      border-radius: 0.75rem;
-      background: linear-gradient(135deg, #00c6ff, #0072ff);
-      color: white;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      box-shadow: 0 4px 15px rgba(0, 114, 255, 0.35);
-      transition: all 0.2s ease;
-    }
-    
-    .download-all:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(0, 114, 255, 0.5);
-    }
-    
-    .download-all:disabled {
-      opacity: 0.7;
-      cursor: not-allowed;
-      transform: none;
-    }
-    
-    .download-all .loading {
-      display: inline-block;
-      width: 1rem;
-      height: 1rem;
-      border: 2px solid transparent;
-      border-top: 2px solid white;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-    
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 1rem;
-      padding: 1rem 0;
-    }
-    
-    @media (min-width: 640px) {
-      .grid {
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 1.25rem;
-      }
-    }
-    
-    @media (min-width: 1024px) {
-      .grid {
-        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-        gap: 1.5rem;
-      }
-      
-      .header-container {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-      }
-      
-      .tabs {
-        margin-top: 0;
-      }
-    }
-    
-    .card {
-      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
-      border: 1px solid rgba(255,255,255,.1);
-      border-radius: 1.25rem;
-      overflow: hidden;
-      position: relative;
-      box-shadow: var(--card-shadow);
-      transition: all 0.3s ease;
-    }
-    
-    .card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 15px 35px rgba(0,0,0,0.3);
-    }
-    
-    .media-container {
-      width: 100%;
-      aspect-ratio: 16/10;
-      position: relative;
-      overflow: hidden;
-      background: #0e1525;
-    }
-    
-    .media {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-    
-    .media.thumbnail {
-      background: linear-gradient(135deg, rgba(124,92,255,0.1), rgba(0,224,255,0.1));
-    }
-    
-    .video-play-icon {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 3rem;
-      height: 3rem;
-      background: rgba(0, 0, 0, 0.7);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 1.5rem;
-      opacity: 0.9;
-      transition: opacity 0.2s ease;
-    }
-    
-    .card:hover .video-play-icon {
-      opacity: 1;
-    }
-    
-    .meta {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem;
-      padding: 0.75rem;
-    }
-    
-    .name {
-      font-size: 0.875rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      color: #d7e3ff;
-      font-weight: 600;
-      flex: 1;
-    }
-    
-    .btns {
-      display: flex;
-      gap: 0.5rem;
-    }
-    
-    a.button, button.button {
-      appearance: none;
-      border: none;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 0.8125rem;
-      padding: 0.5rem 0.75rem;
-      border-radius: 0.75rem;
-      color: white;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.375rem;
-      transition: all 0.2s ease;
-      flex-shrink: 0;
-    }
-    
-    a.button.primary, button.button.primary {
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      box-shadow: var(--button-shadow);
-    }
-    
-    a.button.primary:hover, button.button.primary:hover {
-      transform: scale(1.05);
-      box-shadow: 0 6px 20px rgba(124,92,255,0.5);
-    }
-    
-    a.button.secondary, button.button.secondary {
-      background: rgba(255,255,255,.12);
-      color: var(--text);
-      box-shadow: none;
-    }
-    
-    a.button.secondary:hover, button.button.secondary:hover {
-      background: rgba(255,255,255,.18);
-    }
-    
-    button.button.danger {
-      background: var(--danger);
-      box-shadow: 0 4px 15px rgba(255, 71, 87, 0.35);
-    }
-    
-    button.button.danger:hover {
-      background: #ff6b7a;
-      box-shadow: 0 6px 20px rgba(255, 71, 87, 0.5);
-    }
-    
-    .empty {
-      color: var(--muted);
-      text-align: center;
-      padding: 2.5rem 1rem;
-      font-size: 0.875rem;
-    }
-    
-    .footer {
-      opacity: .7;
-      font-size: 0.75rem;
-      color: var(--muted);
-      text-align: center;
-      padding: 1.75rem 1rem;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-    
-    .loader {
-      display: grid;
-      place-items: center;
-      padding: 2rem;
-    }
-    
-    .spinner {
-      width: 2.5rem;
-      height: 2.5rem;
-      border-radius: 50%;
-      border: 4px solid rgba(255,255,255,.18);
-      border-top-color: var(--accent);
-      animation: spin 1s linear infinite;
-    }
-    
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-    
-    .sr-only {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
-    }
-    
-    /* Lazy loading styles */
-    .media {
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
-    
-    .media.loaded {
-      opacity: 1;
-    }
-    
-    /* Lightbox/modal styles */
-    .modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(11, 15, 23, 0.95);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 100;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s ease;
-    }
-    
-    .modal.active {
-      opacity: 1;
-      pointer-events: auto;
-    }
-    
-    .modal-content {
-      max-width: 90vw;
-      max-height: 90vh;
-      position: relative;
-    }
-    
-    .modal-media {
-      max-width: 100%;
-      max-height: 90vh;
-      border-radius: 0.5rem;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-    }
-    
-    .modal-close {
-      position: absolute;
-      top: -2.5rem;
-      right: 0;
-      background: rgba(255, 255, 255, 0.1);
-      border: none;
-      color: white;
-      width: 2rem;
-      height: 2rem;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      cursor: pointer;
-      font-size: 1.2rem;
-      transition: background 0.2s ease;
-    }
-    
-    .modal-close:hover {
-      background: rgba(255, 255, 255, 0.2);
-    }
-    
-    /* Confirmation dialog */
-    .confirm-dialog {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(11, 15, 23, 0.8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 200;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s ease;
-      padding: 1rem;
-    }
-    
-    .confirm-dialog.active {
-      opacity: 1;
-      pointer-events: auto;
-    }
-    
-    .confirm-content {
-      background: var(--card);
-      border-radius: 1rem;
-      padding: 1.5rem;
-      max-width: 400px;
-      width: 100%;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    
-    .confirm-title {
-      font-size: 1.25rem;
-      font-weight: 600;
-      margin-bottom: 0.5rem;
-      color: var(--text);
-    }
-    
-    .confirm-message {
-      color: var(--muted);
-      margin-bottom: 1.5rem;
-      line-height: 1.5;
-    }
-    
-    .confirm-buttons {
-      display: flex;
-      gap: 0.75rem;
-      justify-content: flex-end;
-    }
-    
-    .confirm-button {
-      padding: 0.625rem 1.25rem;
-      border-radius: 0.75rem;
-      border: none;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    
-    .confirm-cancel {
-      background: rgba(255, 255, 255, 0.1);
-      color: var(--text);
-    }
-    
-    .confirm-cancel:hover {
-      background: rgba(255, 255, 255, 0.2);
-    }
-    
-    .confirm-delete {
-      background: var(--danger);
-      color: white;
-    }
-    
-    .confirm-delete:hover {
-      background: #ff6b7a;
-    }
-    
-    /* Toast notification */
-    .toast {
-      position: fixed;
-      bottom: 1.5rem;
-      right: 1.5rem;
-      background: var(--card);
-      color: var(--text);
-      padding: 0.75rem 1.25rem;
-      border-radius: 0.75rem;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      z-index: 300;
-      transform: translateY(100px);
-      opacity: 0;
-      transition: all 0.3s ease;
-      max-width: 350px;
-    }
-    
-    .toast.visible {
-      transform: translateY(0);
-      opacity: 1;
-    }
-    
-    .toast.success {
-      border-left: 4px solid #2ed573;
-    }
-    
-    .toast.error {
-      border-left: 4px solid var(--danger);
-    }
-    
-    .toast-icon {
-      font-size: 1.25rem;
-    }
-    
-    .toast.success .toast-icon {
-      color: #2ed573;
-    }
-    
-    .toast.error .toast-icon {
-      color: var(--danger);
-    }
-    
-    .toast-message {
-      flex: 1;
-      font-size: 0.875rem;
-    }
-    
-    .toast-close {
-      background: none;
-      border: none;
-      color: var(--muted);
-      cursor: pointer;
-      font-size: 1.125rem;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lỗi Quota - rosieteamlite</title>
+    <style>
+        :root {
+            --bg: #0b0f17;
+            --card: #121826;
+            --muted: #93a4c3;
+            --text: #e6eefc;
+            --accent: #7c5cff;
+            --accent-2: #00e0ff;
+            --danger: #ff4757;
+            --warning: #ff9f43;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: radial-gradient(1200px 800px at 10% -10%, rgba(124,92,255,.25), transparent 40%),
+                        radial-gradient(900px 600px at 110% 10%, rgba(0,224,255,.2), transparent 40%),
+                        var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: var(--card);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .logo {
+            width: 70px;
+            height: 70px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 30px;
+            font-weight: 800;
+            color: white;
+        }
+        
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 18px;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .error-card {
+            background: rgba(255, 71, 87, 0.1);
+            border: 1px solid var(--danger);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+        }
+        
+        .error-icon {
+            color: var(--danger);
+            font-size: 28px;
+            flex-shrink: 0;
+        }
+        
+        .error-content h2 {
+            color: var(--danger);
+            margin-bottom: 10px;
+            font-size: 22px;
+        }
+        
+        .error-content p {
+            color: var(--muted);
+            line-height: 1.6;
+        }
+        
+        .solutions {
+            margin: 30px 0;
+        }
+        
+        .solutions h3 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: var(--accent-2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .solution-list {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .solution-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+        
+        .solution-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+            transform: translateY(-2px);
+        }
+        
+        .solution-number {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        
+        .solution-text {
+            flex: 1;
+        }
+        
+        .solution-text h4 {
+            margin-bottom: 8px;
+            font-size: 18px;
+        }
+        
+        .solution-text p {
+            color: var(--muted);
+            line-height: 1.6;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 40px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            color: white;
+            box-shadow: 0 5px 20px rgba(124, 92, 255, 0.4);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(124, 92, 255, 0.5);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-3px);
+        }
+        
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 14px;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                padding: 25px;
+            }
+            
+            .actions {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+        
+        .icon {
+            font-size: 20px;
+        }
+    </style>
 </head>
 <body>
-  <header>
-    <div class="header-container">
-      <div class="title">
-        <div class="logo">RT</div>
-        <div class="title-text">
-          <h1>Firebase Storage — <strong>rosieteamlite</strong></h1>
-          <div class="sub">Duyệt & tải ảnh / video từ <code>gs://rosieteamlite.appspot.com</code></div>
+    <div class="container">
+        <div class="header">
+            <div class="logo">RT</div>
+            <h1>rosieteamlite Firebase Storage</h1>
+            <div class="subtitle">Trình duyệt ảnh và video</div>
         </div>
-      </div>
-      <div class="tabs" role="tablist">
-        <button id="tab-images" class="tab" role="tab" aria-selected="true" aria-controls="panel-images">Ảnh</button>
-        <button id="tab-videos" class="tab" role="tab" aria-selected="false" aria-controls="panel-videos">Video</button>
-      </div>
+        
+        <div class="content">
+            <div class="error-card">
+                <div class="error-icon">⚠️</div>
+                <div class="error-content">
+                    <h2>Lỗi Quota Firebase Storage</h2>
+                    <p>Bucket <code>rosieteamlite.appspot.com</code> đã vượt quá hạn mức lưu trữ cho phép. Hiện không thể tải ảnh hoặc video từ Firebase Storage.</p>
+                </div>
+            </div>
+            
+            <div class="solutions">
+                <h3><span class="icon">💡</span> Giải pháp khắc phục</h3>
+                <div class="solution-list">
+                    <div class="solution-item">
+                        <div class="solution-number">1</div>
+                        <div class="solution-text">
+                            <h4>Nâng cấp gói Firebase</h4>
+                            <p>Truy cập <a href="https://firebase.google.com/pricing/" target="_blank" style="color: var(--accent-2);">Firebase Pricing</a> để nâng cấp gói dịch vụ và tăng hạn mức lưu trữ.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="solution-item">
+                        <div class="solution-number">2</div>
+                        <div class="solution-text">
+                            <h4>Xóa dữ liệu không cần thiết</h4>
+                            <p>Truy cập <a href="https://console.firebase.google.com/" target="_blank" style="color: var(--accent-2);">Firebase Console</a> và xóa các file không cần thiết để giải phóng dung lượng.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="solution-item">
+                        <div class="solution-number">3</div>
+                        <div class="solution-text">
+                            <h4>Chuyển sang nhà cung cấp khác</h4>
+                            <p>Xem xét sử dụng dịch vụ lưu trữ từ nhà cung cấp khác như AWS S3, Google Cloud Storage hoặc Cloudinary.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="solution-item">
+                        <div class="solution-number">4</div>
+                        <div class="solution-text">
+                            <h4>Tối ưu hóa dung lượng file</h4>
+                            <p>Nén ảnh và video trước khi tải lên để giảm thiểu dung lượng sử dụng.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="actions">
+                <a href="https://console.firebase.google.com/" target="_blank" class="btn btn-primary">
+                    <span class="icon">🔥</span> Truy cập Firebase Console
+                </a>
+                <a href="https://firebase.google.com/pricing/" target="_blank" class="btn btn-secondary">
+                    <span class="icon">💎</span> Xem gói dịch vụ
+                </a>
+                <button onclick="location.reload()" class="btn btn-secondary">
+                    <span class="icon">🔄</span> Thử lại
+                </button>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>rosieteamlite Firebase Storage — Nếu bạn là quản trị viên, vui lòng kiểm tra lại quota Storage.</p>
+        </div>
     </div>
-  </header>
-  
-  <main>
-    <section id="panel-images" role="tabpanel" aria-labelledby="tab-images">
-      <div class="panel-header">
-        <h2 class="panel-title">Tất cả ảnh</h2>
-        <button id="download-all-images" class="download-all">
-          <span>Download All as ZIP</span>
-        </button>
-      </div>
-      <div id="images-loader" class="loader"><div class="spinner" aria-hidden="true"></div><span class="sr-only">Đang tải ảnh…</span></div>
-      <div id="images" class="grid" hidden></div>
-      <div id="images-empty" class="empty" hidden>Không tìm thấy ảnh trong thư mục <code>images/</code>.</div>
-    </section>
-    
-    <section id="panel-videos" role="tabpanel" aria-labelledby="tab-videos" hidden>
-      <div class="panel-header">
-        <h2 class="panel-title">Tất cả video</h2>
-        <button id="download-all-videos" class="download-all">
-          <span>Download All as ZIP</span>
-        </button>
-      </div>
-      <div id="videos-loader" class="loader"><div class="spinner" aria-hidden="true"></div><span class="sr-only">Đang tải video…</span></div>
-      <div id="videos" class="grid" hidden></div>
-      <div id="videos-empty" class="empty" hidden>Không tìm thấy video trong thư mục <code>videos/</code>.</div>
-    </section>
-  </main>
-  
-  <div class="footer">Made with Firebase Storage. Nếu không hiện file, hãy kiểm tra Security Rules (cần cho phép <code>list</code> & <code>read</code>).</div>
-  
-  <!-- Modal for media preview -->
-  <div class="modal" id="media-modal">
-    <div class="modal-content">
-      <img class="modal-media" id="modal-media" src="" alt="">
-      <button class="modal-close" id="modal-close">×</button>
-    </div>
-  </div>
 
-  <!-- Confirmation dialog for delete -->
-  <div class="confirm-dialog" id="confirm-dialog">
-    <div class="confirm-content">
-      <h3 class="confirm-title">Xác nhận xóa</h3>
-      <p class="confirm-message" id="confirm-message">Bạn có chắc chắn muốn xóa file này? Hành động này không thể hoàn tác.</p>
-      <div class="confirm-buttons">
-        <button class="confirm-button confirm-cancel" id="confirm-cancel">Hủy</button>
-        <button class="confirm-button confirm-delete" id="confirm-delete">Xóa</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Toast notification -->
-  <div class="toast" id="toast">
-    <div class="toast-icon">!</div>
-    <div class="toast-message" id="toast-message"></div>
-    <button class="toast-close" id="toast-close">×</button>
-  </div>
-
-  <!-- Firebase Web SDK (modular) -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-    import { getStorage, ref, listAll, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyBHDjCby6O0nhfZvZ45cMYeDxq9gS8qzD4",
-      authDomain: "rosieteamlite.firebaseapp.com",
-      projectId: "rosieteamlite",
-      storageBucket: "rosieteamlite.appspot.com",
-      messagingSenderId: "830018436539"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const storage = getStorage(app);
-
-    const $ = (sel) => document.querySelector(sel);
-    const $$ = (sel) => document.querySelectorAll(sel);
-    
-    // State management
-    let currentItems = {
-      images: [],
-      videos: []
-    };
-    
-    let itemToDelete = null;
-    
-    // Modal functionality
-    const modal = $('#media-modal');
-    const modalMedia = $('#modal-media');
-    const modalClose = $('#modal-close');
-    
-    function openModal(url, type) {
-      if (type === 'image') {
-        modalMedia.src = url;
-        modalMedia.alt = 'Preview';
-        modal.classList.add('active');
-      } else if (type === 'video') {
-        modalMedia.src = url;
-        modalMedia.alt = 'Video preview';
-        modal.classList.add('active');
-      }
-    }
-    
-    function closeModal() {
-      modal.classList.remove('active');
-      if (modalMedia.src) {
-        // Pause video if it's playing
-        if (modalMedia.tagName === 'VIDEO') {
-          modalMedia.pause();
-        }
-        // Clear src to stop loading
-        modalMedia.src = '';
-      }
-    }
-    
-    modalClose.addEventListener('click', closeModal);
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) closeModal();
-    });
-    
-    // Confirmation dialog functionality
-    const confirmDialog = $('#confirm-dialog');
-    const confirmMessage = $('#confirm-message');
-    const confirmCancel = $('#confirm-cancel');
-    const confirmDelete = $('#confirm-delete');
-    
-    function openConfirmDialog(item) {
-      itemToDelete = item;
-      confirmMessage.textContent = `Bạn có chắc chắn muốn xóa "${item.name}"? Hành động này không thể hoàn tác.`;
-      confirmDialog.classList.add('active');
-    }
-    
-    function closeConfirmDialog() {
-      confirmDialog.classList.remove('active');
-      itemToDelete = null;
-    }
-    
-    confirmCancel.addEventListener('click', closeConfirmDialog);
-    confirmDelete.addEventListener('click', async () => {
-      if (itemToDelete) {
-        try {
-          // Create a reference to the file to delete
-          const fileRef = ref(storage, `${itemToDelete.type === 'image' ? 'images/' : 'videos/'}${itemToDelete.name}`);
-          
-          // Delete the file
-          await deleteObject(fileRef);
-          
-          // Remove from UI
-          $(`[data-id="${itemToDelete.id}"]`)?.remove();
-          
-          // Update state
-          currentItems[itemToDelete.type + 's'] = currentItems[itemToDelete.type + 's'].filter(
-            item => item.name !== itemToDelete.name
-          );
-          
-          // Show success message
-          showToast(`Đã xóa "${itemToDelete.name}" thành công.`, 'success');
-        } catch (error) {
-          console.error('Error deleting file:', error);
-          showToast(`Lỗi khi xóa "${itemToDelete.name}".`, 'error');
-        }
-      }
-      closeConfirmDialog();
-    });
-    
-    // Toast notification functionality
-    const toast = $('#toast');
-    const toastMessage = $('#toast-message');
-    const toastClose = $('#toast-close');
-    let toastTimeout;
-    
-    function showToast(message, type = 'success') {
-      toastMessage.textContent = message;
-      toast.className = `toast ${type}`;
-      toast.classList.add('visible');
-      
-      // Clear previous timeout
-      if (toastTimeout) clearTimeout(toastTimeout);
-      
-      // Auto hide after 5 seconds
-      toastTimeout = setTimeout(() => {
-        toast.classList.remove('visible');
-      }, 5000);
-    }
-    
-    toastClose.addEventListener('click', () => {
-      toast.classList.remove('visible');
-      if (toastTimeout) clearTimeout(toastTimeout);
-    });
-    
-    // Lazy loading with Intersection Observer
-    const lazyLoadMedia = () => {
-      const lazyMedia = $$('.media:not(.loaded)');
-      
-      if ('IntersectionObserver' in window) {
-        const lazyMediaObserver = new IntersectionObserver((entries, observer) => {
-          entries.forEach(entry => {
-            if (entry.isIntersecting) {
-              const media = entry.target;
-              if (media.dataset.src) {
-                media.src = media.dataset.src;
-              }
-              
-              media.classList.add('loaded');
-              lazyMediaObserver.unobserve(media);
+    <script>
+        // Kiểm tra kết nối Internet
+        window.addEventListener('load', function() {
+            if (!navigator.onLine) {
+                alert('Lỗi kết nối mạng. Vui lòng kiểm tra kết nối Internet của bạn.');
             }
-          });
         });
-        
-        lazyMedia.forEach(media => {
-          lazyMediaObserver.observe(media);
-        });
-      } else {
-        // Fallback for browsers without IntersectionObserver
-        lazyMedia.forEach(media => {
-          if (media.dataset.src) {
-            media.src = media.dataset.src;
-          }
-          media.classList.add('loaded');
-        });
-      }
-    };
-    
-    function cardTemplate({url, name, type, id}){
-      const isVideo = type === 'video';
-      const el = document.createElement('article');
-      el.className = 'card';
-      el.dataset.id = id;
-      
-      // Create a thumbnail for videos to improve performance
-      const videoThumb = isVideo ? `${url}#t=0.1` : '';
-      
-      el.innerHTML = `
-        <div class="media-container">
-          ${isVideo ? 
-            `<video class="media thumbnail" data-src="${url}" preload="metadata" playsinline></video>
-             <div class="video-play-icon">▶</div>` : 
-            `<img class="media" data-src="${url}" alt="${name}" loading="lazy" />`
-          }
-        </div>
-        <div class="meta">
-          <div class="name" title="${name}">${name}</div>
-          <div class="btns">
-            <a class="button secondary preview-btn" href="#" data-url="${url}" data-type="${type}">Xem</a>
-            <a class="button primary" href="${url}" download="${name}">⬇ Tải</a>
-            <button class="button danger delete-btn" data-id="${id}" data-name="${name}" data-type="${type}">Xóa</button>
-          </div>
-        </div>`;
-      return el;
-    }
-
-    async function loadFolder(prefix, containerEl, emptyEl, type){
-      try{
-        const folderRef = ref(storage, prefix);
-        const res = await listAll(folderRef);
-        if(res.items.length === 0){
-          emptyEl.hidden = false; 
-          return;
-        }
-        
-        const urlPromises = res.items.map(async (itemRef) => {
-          const url = await getDownloadURL(itemRef);
-          const id = `${type}-${itemRef.name.replace(/\s+/g, '-')}`;
-          return { url, name: itemRef.name, type, id };
-        });
-        
-        const items = await Promise.all(urlPromises);
-        const frag = document.createDocumentFragment();
-        
-        // Store items for later use
-        currentItems[type + 's'] = items;
-        
-        items.sort((a,b) => a.name.localeCompare(b.name)).forEach(item => {
-          frag.appendChild(cardTemplate(item));
-        });
-        
-        containerEl.appendChild(frag);
-        containerEl.hidden = false;
-        
-        // Initialize lazy loading
-        setTimeout(lazyLoadMedia, 100);
-        
-        // Add event listeners for preview buttons
-        setTimeout(() => {
-          const previewButtons = containerEl.querySelectorAll('.preview-btn');
-          previewButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-              e.preventDefault();
-              const url = btn.dataset.url;
-              const mediaType = btn.dataset.type;
-              openModal(url, mediaType);
-            });
-          });
-          
-          // Add event listeners for delete buttons
-          const deleteButtons = containerEl.querySelectorAll('.delete-btn');
-          deleteButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-              e.preventDefault();
-              const id = btn.dataset.id;
-              const name = btn.dataset.name;
-              const type = btn.dataset.type;
-              openConfirmDialog({ id, name, type });
-            });
-          });
-        }, 200);
-        
-      } catch(err) {
-        emptyEl.hidden = false;
-        emptyEl.textContent = `Lỗi tải ${type==='video'?'video':'ảnh'}: ${err.message}`;
-        console.error(err);
-      }
-    }
-
-    const tabImages = $('#tab-images');
-    const tabVideos = $('#tab-videos');
-    const panelImages = $('#panel-images');
-    const panelVideos = $('#panel-videos');
-
-    function selectTab(which){
-      const isImages = which === 'images';
-      tabImages.setAttribute('aria-selected', isImages);
-      tabVideos.setAttribute('aria-selected', !isImages);
-      panelImages.hidden = !isImages; 
-      panelVideos.hidden = isImages;
-      
-      // Reinitialize lazy loading when tab changes
-      setTimeout(lazyLoadMedia, 300);
-    }
-
-    tabImages.addEventListener('click', () => selectTab('images'));
-    tabVideos.addEventListener('click', () => selectTab('videos'));
-
-    // Download all as ZIP functionality
-    async function downloadAllAsZip(type) {
-      const items = currentItems[type + 's'];
-      if (!items || items.length === 0) {
-        showToast(`Không có ${type === 'image' ? 'ảnh' : 'video'} để tải về.`, 'error');
-        return;
-      }
-      
-      const button = $(`#download-all-${type}s`);
-      const originalText = button.innerHTML;
-      button.innerHTML = '<div class="loading"></div><span>Đang tạo ZIP...</span>';
-      button.disabled = true;
-      
-      try {
-        const zip = new JSZip();
-        const folder = zip.folder(type);
-        
-        // Fetch all files
-        const fetchPromises = items.map(async (item) => {
-          const response = await fetch(item.url);
-          return response.blob();
-        });
-        
-        const blobs = await Promise.all(fetchPromises);
-        
-        // Add files to ZIP
-        blobs.forEach((blob, index) => {
-          folder.file(items[index].name, blob);
-        });
-        
-        // Generate ZIP file
-        const content = await zip.generateAsync({ type: 'blob' });
-        
-        // Download the ZIP file
-        saveAs(content, `${type}s-${new Date().toISOString().slice(0, 10)}.zip`);
-        
-        showToast(`Đã tải về ${items.length} ${type === 'image' ? 'ảnh' : 'video'} thành công.`, 'success');
-      } catch (error) {
-        console.error('Error creating ZIP:', error);
-        showToast('Lỗi khi tạo file ZIP.', 'error');
-      } finally {
-        button.innerHTML = originalText;
-        button.disabled = false;
-      }
-    }
-    
-    // Add event listeners for download all buttons
-    $('#download-all-images').addEventListener('click', () => downloadAllAsZip('image'));
-    $('#download-all-videos').addEventListener('click', () => downloadAllAsZip('video'));
-
-    onAuthStateChanged(auth, (u) => { 
-      if(!u) { 
-        signInAnonymously(auth).catch(console.warn); 
-      } 
-    });
-
-    (async () => {
-      await loadFolder('images/', document.getElementById('images'), document.getElementById('images-empty'), 'image');
-      document.getElementById('images-loader').remove();
-
-      await loadFolder('videos/', document.getElementById('videos'), document.getElementById('videos-empty'), 'video');
-      document.getElementById('videos-loader').remove();
-    })();
-  </script>
+    </script>
 </body>
 </html>
